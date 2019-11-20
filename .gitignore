@@ -1,0 +1,10 @@
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.logs
+*.iml
+.idea/
+.eclipse
+/odata-c4c/src/generated/java/META-INF/JAXB/episode*.xjb
