@@ -24,7 +24,6 @@
 
 package io.i4tech.odata.common.model;
 
-import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -33,7 +32,6 @@ import java.util.stream.Collectors;
 
 public class ODataKey<E extends ODataEntity> {
 
-    @Getter
     private final List<KeyValue<E>> keyPredicate;
 
     public ODataKey(List<KeyValue<E>> keyValues) {

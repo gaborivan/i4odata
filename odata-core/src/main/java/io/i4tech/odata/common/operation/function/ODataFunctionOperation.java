@@ -46,7 +46,7 @@ public class ODataFunctionOperation<E extends ODataEntity> extends AbstractOData
         return client.function(this.entityClass, this.requestPath, this.postParameters);
     }
 
-    public static ODataFunctionOperationBuilder<?> builder() {
+    public static <E extends ODataEntity> ODataFunctionOperationBuilder<E> builder() {
         return new ODataFunctionOperationBuilder<>();
     }
 }

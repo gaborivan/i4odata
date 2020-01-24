@@ -39,7 +39,7 @@ public class ODataUpdateOperation<E extends ODataEntity> extends AbstractODataWr
         return client.update(this.entityClass, this.requestPath, this.data);
     }
 
-    public static ODataUpdateOperationBuilder<?> builder() {
+    public static <E extends ODataEntity> ODataUpdateOperationBuilder<E> builder() {
         return new ODataUpdateOperationBuilder<>();
     }
 }

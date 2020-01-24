@@ -28,12 +28,15 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 
 public class XsdGeneratorMojoTest {
 
@@ -54,7 +57,19 @@ public class XsdGeneratorMojoTest {
         }
     }
 
+    private static final Properties odataProps = new Properties();
+
     private XsdGeneratorMojo xsdGenerator = new XsdGeneratorMojo();
+
+    @BeforeClass
+    public static void initProps() {
+        try (final InputStream stream =
+                     XsdGeneratorMojoTest.class.getResourceAsStream("/odata.properties")) {
+            odataProps.load(stream);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
 
     @Before
     public void setup() {
@@ -62,6 +77,7 @@ public class XsdGeneratorMojoTest {
         xsdGenerator.setRootServiceUrl("https://my330751.crm.ondemand.com/sap/c4c/odata/v1/c4codataapi/");
         xsdGenerator.setRootTargetNamespace("http://maihiro.com/odata/c4c/");
         xsdGenerator.setRootCollectionPath("target/generated-collections/");
+        xsdGenerator.setPackageNamespace("test");
         xsdGenerator.setEntityPrefix("c4codata");
         xsdGenerator.setEntityBaseClass("io.i4tech.odata.c4c.model.C4cODataEntity");
         xsdGenerator.setFunctionImportBaseClass("io.i4tech.odata.common.model.ODataFunction");
@@ -71,8 +87,8 @@ public class XsdGeneratorMojoTest {
         xsdGenerator.setEnumMetaInterface("io.i4tech.odata.common.model.ODataEnum");
         xsdGenerator.setCodelistWrapperMetaInterface("io.i4tech.odata.common.model.ODataCodeList");
         xsdGenerator.setContextualCodelistWrapperMetaInterface("io.i4tech.odata.common.model.ODataContextualCodeList");
-        xsdGenerator.setBasicAuthUser("gabori");
-        xsdGenerator.setBasicAuthPassword("Tehenke10");
+        xsdGenerator.setBasicAuthUser(odataProps.getProperty("user"));
+        xsdGenerator.setBasicAuthPassword(odataProps.getProperty("password"));
         xsdGenerator.setOutputSchema("target/test-output.xsd");
 
         new File("target/test-output.xsd").delete();
@@ -80,7 +96,6 @@ public class XsdGeneratorMojoTest {
 
     @Test
     public void testSingleHeaderEntity() throws MojoFailureException, MojoExecutionException {
-        xsdGenerator.setPackageNamespace("test");
         xsdGenerator.setHeaderEntities("Employee");
 
         xsdGenerator.execute();
@@ -89,7 +104,6 @@ public class XsdGeneratorMojoTest {
 
     @Test
     public void testSingleHeaderEntityWithExcludedCodelists() throws MojoFailureException, MojoExecutionException {
-        xsdGenerator.setPackageNamespace("test");
         xsdGenerator.setHeaderEntities("Employee");
         xsdGenerator.setExcludedCodelists(new ListBuilder<String>()
                 .add("LeadSalesAndMarketingTeamPartyTypeCode")
@@ -112,7 +126,6 @@ public class XsdGeneratorMojoTest {
 
     @Test
     public void testSingleHeaderEntitySingleEntityImport() throws MojoFailureException, MojoExecutionException {
-        xsdGenerator.setPackageNamespace("test");
         xsdGenerator.setHeaderEntities("Employee");
         xsdGenerator.setImportedEntities(Collections.singletonList(XsdGeneratorMojo.ImportedEntity.builder()
                 .name("BusinessUser")
@@ -125,7 +138,6 @@ public class XsdGeneratorMojoTest {
 
     @Test
     public void testSingleHeaderEntitySingleFunctionImport() throws MojoFailureException, MojoExecutionException {
-        xsdGenerator.setPackageNamespace("test");
         xsdGenerator.setHeaderEntities("Contact");
         xsdGenerator.setFunctionImports("CheckForDuplicates");
 

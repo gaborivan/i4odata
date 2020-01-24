@@ -25,14 +25,6 @@
 package io.i4tech.odata.common.client;
 
 public class CsrfTokenValidationFailedException extends RuntimeException {
-    public CsrfTokenValidationFailedException(String message) {
-        super(message);
-    }
-
-    public CsrfTokenValidationFailedException(Exception e) {
-        super(e);
-    }
-
     public CsrfTokenValidationFailedException() {
         super();
     }

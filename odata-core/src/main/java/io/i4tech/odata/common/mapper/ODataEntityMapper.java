@@ -55,13 +55,10 @@ public class ODataEntityMapper {
     }
 
     private synchronized Map<String, Field> getEntityFields(Class<?> entityClass) {
-        Map<String, Field> fieldMap = entityClassFields.get(entityClass);
-        if (fieldMap == null) {
-            fieldMap = Arrays.stream(entityClass.getDeclaredFields())
-                    .collect(Collectors.toMap(f -> f.getName().toLowerCase(), Function.identity()));
-            entityClassFields.put(entityClass, fieldMap);
-        }
-        return fieldMap;
+        return entityClassFields.computeIfAbsent(entityClass,
+                clz -> Arrays.stream(clz.getDeclaredFields())
+                    .collect(Collectors.toMap(f -> f.getName().toLowerCase(), Function.identity()))
+        );
     }
 
     protected void configureSerialization() {
@@ -112,10 +109,8 @@ public class ODataEntityMapper {
     protected Object mapFieldValue(Class<?> entityClass, String fieldName, Object fieldValue) {
         final Field field = getEntityFields(entityClass).get(fieldName.toLowerCase());
         Object mappedValue = fieldValue;
-        if (field != null && field.getAnnotation(XmlElement.class) != null) {
-            if (field.getType().isAssignableFrom(UUID.class)) {
-                mappedValue = UUID.fromString((String) fieldValue);
-            }
+        if (field != null && field.getAnnotation(XmlElement.class) != null && field.getType().isAssignableFrom(UUID.class)) {
+            mappedValue = UUID.fromString((String) fieldValue);
         }
         return mappedValue;
     }
@@ -130,12 +125,12 @@ public class ODataEntityMapper {
 
     public <E extends ODataEntity> Map<String, Object> mapEntityToProperties(E data, Class<E> entityClass) {
         final Map<String, Object> dataMap = new HashMap<>();
-        objectMapper.convertValue(data, Map.class).forEach((k, v) -> {
+        objectMapper.convertValue(data, Map.class).forEach((k, v) ->
             dataMap.put(
                     mapFieldName(entityClass, (String)k),
                     mapFieldValue(entityClass, (String)k, v)
-            );
-        });
+            )
+        );
         return dataMap;
     }
 }

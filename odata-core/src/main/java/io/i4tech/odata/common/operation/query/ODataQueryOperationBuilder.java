@@ -35,11 +35,9 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
-//@AllArgsConstructor
 public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractODataOperationBuilder<E> {
 
-    public ODataQueryOperationBuilder() {
-    }
+    public static final String QUERY_STRING_ALREADY_SET = "Query string already set.";
 
     private class ODataOrder<E extends ODataEntity> {
         private final ODataFields<E> field;
@@ -62,23 +60,21 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
     private Integer skip;
     private Integer top;
 
+    @Override
     public ODataQueryOperationBuilder<E> client(ODataClient client) {
         return (ODataQueryOperationBuilder<E>) super.client(client);
     }
 
     private void addSelectFields(String entityPrefix, ODataFields<?>... fields) {
-        List<ODataFields<? extends ODataEntity>> selected = this.select.get(entityPrefix);
-        if (selected == null) {
-            selected = new ArrayList<>();
-            this.select.put(entityPrefix, selected);
-        }
+        List<ODataFields<? extends ODataEntity>> selected = this.select.computeIfAbsent(entityPrefix,
+                pfx -> new ArrayList<>());
         selected.addAll(Arrays.asList(fields));
     }
 
     @Override
     public <R extends ODataEntity> ODataQueryOperationBuilder<R> path(Class<R> resourceClass, ODataKeyFields<R> keyField, String keyValue) {
         if (this.queryString != null) {
-            throw new ODataOperationBuilderException("Query string already set.");
+            throw new ODataOperationBuilderException(QUERY_STRING_ALREADY_SET);
         }
         return (ODataQueryOperationBuilder<R>) super.path(resourceClass, keyField, keyValue);
     }
@@ -86,7 +82,7 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
     @Override
     public <R extends ODataEntity> ODataQueryOperationBuilder<R> path(Class<R> resourceClass, ODataKey<R> key) {
         if (this.queryString != null) {
-            throw new ODataOperationBuilderException("Query string already set.");
+            throw new ODataOperationBuilderException(QUERY_STRING_ALREADY_SET);
         }
         return (ODataQueryOperationBuilder<R>) super.path(resourceClass, key);
 
@@ -95,7 +91,7 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
     @Override
     public <R extends ODataEntity> ODataQueryOperationBuilder<R> path(Class<R> resourceClass) {
         if (this.queryString != null) {
-            throw new ODataOperationBuilderException("Query string already set.");
+            throw new ODataOperationBuilderException(QUERY_STRING_ALREADY_SET);
         }
         return (ODataQueryOperationBuilder<R>) super.path(resourceClass);
     }
@@ -111,7 +107,7 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
         } else if (this.inlineCount != null) {
             throw new ODataOperationBuilderException("Count and inlinecount are not allowed in the same request.");
         } else if (this.queryString != null) {
-            throw new ODataOperationBuilderException("Query string already set.");
+            throw new ODataOperationBuilderException(QUERY_STRING_ALREADY_SET);
         }
         this.count = true;
         return this;
@@ -123,7 +119,7 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
         } else if (this.count != null) {
             throw new ODataOperationBuilderException("Count and inlinecount are not allowed in the same request.");
         } else if (this.queryString != null) {
-            throw new ODataOperationBuilderException("Query string already set.");
+            throw new ODataOperationBuilderException(QUERY_STRING_ALREADY_SET);
         }
         this.inlineCount = true;
         return this;
@@ -131,7 +127,7 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
 
     public ODataQueryOperationBuilder<E> orderBy(ODataFields<E> field) {
         if (this.queryString != null) {
-            throw new ODataOperationBuilderException("Query string already set.");
+            throw new ODataOperationBuilderException(QUERY_STRING_ALREADY_SET);
         }
         this.orderby.add(new ODataOrder<>(field, OrderByDirection.ASC));
         return this;
@@ -139,7 +135,7 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
 
     public ODataQueryOperationBuilder<E> orderBy(ODataFields<E> field, OrderByDirection direction) {
         if (this.queryString != null) {
-            throw new ODataOperationBuilderException("Query string already set.");
+            throw new ODataOperationBuilderException(QUERY_STRING_ALREADY_SET);
         }
         this.orderby.add(new ODataOrder<>(field, direction));
         return this;
@@ -149,7 +145,7 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
         if (this.search != null) {
             throw new ODataOperationBuilderException("Only one search clause can be added to one request.");
         } else if (this.queryString != null) {
-            throw new ODataOperationBuilderException("Query string already set.");
+            throw new ODataOperationBuilderException(QUERY_STRING_ALREADY_SET);
         }
         this.search = searchString;
         return this;
@@ -157,7 +153,7 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
 
     public ODataQueryOperationBuilder<E> select(ODataFields<E>... fields) {
         if (this.queryString != null) {
-            throw new ODataOperationBuilderException("Query string already set.");
+            throw new ODataOperationBuilderException(QUERY_STRING_ALREADY_SET);
         }
         addSelectFields("", fields);
         return this;
@@ -167,7 +163,7 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
         if (this.filter != null) {
             throw new ODataOperationBuilderException("Only one filter clause can be added to one request.");
         } else if (this.queryString != null) {
-            throw new ODataOperationBuilderException("Query string already set.");
+            throw new ODataOperationBuilderException(QUERY_STRING_ALREADY_SET);
         }
         this.filter = filterExpression;
         return this;
@@ -175,7 +171,7 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
 
     public ODataQueryOperationBuilder<E> expand(ODataNavigations<E> navigation) {
         if (this.queryString != null) {
-            throw new ODataOperationBuilderException("Query string already set.");
+            throw new ODataOperationBuilderException(QUERY_STRING_ALREADY_SET);
         }
         this.expand.add(navigation);
         return this;
@@ -183,7 +179,7 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
 
     public ODataQueryOperationBuilder<E> expandSelect(ODataNavigations<E> navigation, ODataFields<?>... select) {
         if (this.queryString != null) {
-            throw new ODataOperationBuilderException("Query string already set.");
+            throw new ODataOperationBuilderException(QUERY_STRING_ALREADY_SET);
         }
         this.expand.add(navigation);
         addSelectFields(navigation.value(), select);
@@ -194,7 +190,7 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
         if (this.skip != null) {
             throw new ODataOperationBuilderException("Only one skip clause can be added to one request.");
         } else if (this.queryString != null) {
-            throw new ODataOperationBuilderException("Query string already set.");
+            throw new ODataOperationBuilderException(QUERY_STRING_ALREADY_SET);
         }
         this.skip = skip;
         return this;
@@ -204,7 +200,7 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
         if (this.top != null) {
             throw new ODataOperationBuilderException("Only one top clause can be added to one request.");
         } else if (this.queryString != null) {
-            throw new ODataOperationBuilderException("Query string already set.");
+            throw new ODataOperationBuilderException(QUERY_STRING_ALREADY_SET);
         }
         this.top = top;
         return this;
@@ -213,8 +209,8 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
     public ODataQueryOperationBuilder<E> queryString(String queryString) {
         if (this.queryString != null) {
             throw new ODataOperationBuilderException("Only one query string can be added to one request.");
-        } else if (!(this.filter == null && this.select == null && this.search == null && this.expand == null &&
-                this.orderby == null && this.skip == null && this.top == null && this.count == null &&
+        } else if (!(this.filter == null && this.select.isEmpty() && this.search == null && this.expand.isEmpty() &&
+                this.orderby.isEmpty() && this.skip == null && this.top == null && this.count == null &&
                 this.inlineCount == null)) {
             throw new ODataOperationBuilderException("Query string can only be set if no other clause has been supplied.");
         }
@@ -227,10 +223,8 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
         return false;
     }
 
-    @Override
-    public ODataQueryOperation<E> build() {
-        boolean isFirstClause = true;
-        StringBuilder urlBuilder = new StringBuilder("/");
+    private StringBuilder buildPathUrl() {
+        final StringBuilder urlBuilder = new StringBuilder("/");
 
         if (path.isEmpty() && StringUtils.isBlank(collectionName)) {
             throw new ODataOperationBuilderException("Path expression is mandatory.");
@@ -240,15 +234,22 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
         }
         if (!path.isEmpty()) {
             urlBuilder.append(path.stream()
-                    .map(e -> e.toString())
+                    .map(ODataPathElement::toString)
                     .collect(Collectors.joining("/")));
         } else {
             urlBuilder.append(collectionName);
         }
-
         if (count != null) {
             urlBuilder.append("/$count");
         }
+        return urlBuilder;
+    }
+
+    @Override
+    public ODataQueryOperation<E> build() {
+        final StringBuilder urlBuilder = buildPathUrl();
+        boolean isFirstClause = true;
+
         if (queryString != null) {
             isFirstClause = appendClause(urlBuilder, isFirstClause, queryString);
         }
@@ -263,7 +264,7 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
             isFirstClause = appendClause(urlBuilder, isFirstClause,
                     String.format("$expand=%s",
                             expand.stream()
-                                    .map(n -> n.value())
+                                    .map(ODataNavigations::value)
                                     .collect(Collectors.joining(",")
                                     )
                     )
@@ -300,7 +301,7 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
                     String.format("$top=%d", top));
         }
         if (inlineCount != null && inlineCount.booleanValue()) {
-            isFirstClause = appendClause(urlBuilder, isFirstClause, "$inlinecount=allpages");
+            appendClause(urlBuilder, isFirstClause, "$inlinecount=allpages");
         }
 
         final String entitySetName = StringUtils.isNotBlank(collectionName) ?

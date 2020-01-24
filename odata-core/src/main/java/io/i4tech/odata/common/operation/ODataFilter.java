@@ -26,6 +26,7 @@ package io.i4tech.odata.common.operation;
 
 import io.i4tech.odata.common.model.ODataEntity;
 import io.i4tech.odata.common.model.ODataFields;
+import io.i4tech.odata.common.util.ODataEntityUtils;
 import lombok.Getter;
 
 import java.time.LocalDate;
@@ -34,20 +35,23 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("squid:S2326") // Generic type parameter needed for type safe interface
 public class ODataFilter<E extends ODataEntity> {
 
     @Getter
     private String filterExpression;
 
     public enum Option {
-        EQUALS("%s eq '%s'"),
-        GREATER_OR_EQUALS("%s ge '%s'"),
-        LESS_OR_EQUALS("%s le '%s'"),
-        EQUALS_DATE_TIME("%s eq datetimeoffset'%s'"),
-        GREATER_OR_EQUALS_DATE_TIME("%s ge datetimeoffset'%s'"),
-        LESS_OR_EQUALS_DATE_TIME("%s le datetimeoffset'%s'"),
-        ENDS_WITH("endswith(%s,'%s')"),
-        STARTS_WITH("startswith(%s,'%s')");
+        EQUALS("%s eq %s"),
+        NOT_EQUALS("%s ne %s"),
+        GREATER_THAN("%s gt %s"),
+        GREATER_OR_EQUALS("%s ge %s"),
+        LESS_THAN("%s lt %s"),
+        LESS_OR_EQUALS("%s le %s"),
+        ENDS_WITH("endswith(%s,%s)"),
+        NOT_ENDS_WITH("not endswith(%s,%s)"),
+        STARTS_WITH("startswith(%s,%s)"),
+        NOT_STARTS_WITH("not startswith(%s,%s)");
 
         private final String value;
 
@@ -105,75 +109,90 @@ public class ODataFilter<E extends ODataEntity> {
             expression.append(String.format(option.value(), field.value(), value));
             return expression.toString();
         }
-        
     }
     
     public static class ODataFilterExpressionBuilder<E extends ODataEntity> {
 
         private List<ODataFilterExpression<E>> expressions = new ArrayList<>();
-        
+        private ODataFilterExpressionFormatter formatter;
+
+        private ODataFilterExpressionFormatter getFormatter() {
+            if (formatter == null) {
+                formatter = new DefaultFilterExpressionFormatter();
+            }
+            return formatter;
+        }
+
         private ODataFilterExpressionBuilder(ODataFields<E> field, Option option, String value) {
-            expressions.add(new ODataFilterExpression<>(field, option, value));
+            final String formattedValue = getFormatter().format(ODataEntityUtils.getFieldEdmType(field), value);
+            expressions.add(new ODataFilterExpression<>(field, option, formattedValue));
         }
 
         private ODataFilterExpressionBuilder(ODataFields<E> field, Option option, Date value) {
-            final String stringValue = value.toString();
+            final String stringValue = getFormatter().format(ODataEntityUtils.getFieldEdmType(field), value);
             expressions.add(new ODataFilterExpression<>(field, option, stringValue));
         }
 
         private ODataFilterExpressionBuilder(ODataFields<E> field, Option option, Number value) {
-            final String stringValue = value.toString();
+            final String stringValue = getFormatter().format(ODataEntityUtils.getFieldEdmType(field), value);
             expressions.add(new ODataFilterExpression<>(field, option, stringValue));
         }
 
         public ODataFilterExpressionBuilder<E> and(ODataFields<E> field, Option option, Date value) {
-            final String stringValue = value.toString();
+            final String stringValue = getFormatter().format(ODataEntityUtils.getFieldEdmType(field), value);
             expressions.add(new ODataFilterExpression<>(Operation.AND, field, option, stringValue));
             return this;
         }
 
         public ODataFilterExpressionBuilder<E> or(ODataFields<E> field, Option option, Date value) {
-            final String stringValue = value.toString();
+            final String stringValue = getFormatter().format(ODataEntityUtils.getFieldEdmType(field), value);
             expressions.add(new ODataFilterExpression<>(Operation.OR, field, option, stringValue));
             return this;
         }
 
         public ODataFilterExpressionBuilder<E> and(ODataFields<E> field, Option option, LocalDate value) {
-            final String stringValue = value.toString();
+            final String stringValue = getFormatter().format(ODataEntityUtils.getFieldEdmType(field), value);
             expressions.add(new ODataFilterExpression<>(Operation.AND, field, option, stringValue));
             return this;
         }
 
         public ODataFilterExpressionBuilder<E> or(ODataFields<E> field, Option option, LocalDate value) {
-            final String stringValue = value.toString();
+            final String stringValue = getFormatter().format(ODataEntityUtils.getFieldEdmType(field), value);
             expressions.add(new ODataFilterExpression<>(Operation.OR, field, option, stringValue));
             return this;
         }
 
         public ODataFilterExpressionBuilder<E> and(ODataFields<E> field, Option option, Number value) {
-            final String stringValue = value.toString();
+            final String stringValue = getFormatter().format(ODataEntityUtils.getFieldEdmType(field), value);
             expressions.add(new ODataFilterExpression<>(Operation.AND, field, option, stringValue));
             return this;
         }
 
         public ODataFilterExpressionBuilder<E> or(ODataFields<E> field, Option option, Number value) {
-            final String stringValue = value.toString();
+            final String stringValue = getFormatter().format(ODataEntityUtils.getFieldEdmType(field), value);
             expressions.add(new ODataFilterExpression<>(Operation.OR, field, option, stringValue));
             return this;
         }
 
         public ODataFilterExpressionBuilder<E> and(ODataFields<E> field, Option option, String value) {
-            expressions.add(new ODataFilterExpression<>(Operation.AND, field, option, value));
+            final String formattedValue = getFormatter().format(ODataEntityUtils.getFieldEdmType(field), value);
+            expressions.add(new ODataFilterExpression<>(Operation.AND, field, option, formattedValue));
             return this;
         }
 
         public ODataFilterExpressionBuilder<E> or(ODataFields<E> field, Option option, String value) {
-            expressions.add(new ODataFilterExpression<>(Operation.OR, field, option, value));
+            final String formattedValue = getFormatter().format(ODataEntityUtils.getFieldEdmType(field), value);
+            expressions.add(new ODataFilterExpression<>(Operation.OR, field, option, formattedValue));
+            return this;
+        }
+
+        public ODataFilterExpressionBuilder<E> formatter(ODataFilterExpressionFormatter formatter) {
+            this.formatter = formatter;
             return this;
         }
 
         public ODataFilter<E> build() {
-            return new ODataFilter<>(expressions.stream().map(e -> e.toString()).collect(Collectors.joining()));
+            return new ODataFilter<>(expressions.stream().map(ODataFilterExpression::toString).collect(Collectors.joining()));
         }
     }
 

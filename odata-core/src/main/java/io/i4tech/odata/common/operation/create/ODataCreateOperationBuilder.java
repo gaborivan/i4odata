@@ -24,12 +24,11 @@
 
 package io.i4tech.odata.common.operation.create;
 
+import io.i4tech.odata.common.client.ODataClient;
 import io.i4tech.odata.common.model.ODataEntity;
 import io.i4tech.odata.common.model.ODataKey;
 import io.i4tech.odata.common.model.ODataKeyFields;
 import io.i4tech.odata.common.operation.AbstractODataWriteOperationBuilder;
-import io.i4tech.odata.common.operation.ODataOperation;
-import io.i4tech.odata.common.client.ODataClient;
 
 import java.util.stream.Collectors;
 
@@ -38,30 +37,35 @@ public class ODataCreateOperationBuilder<E extends ODataEntity> extends Abstract
     ODataCreateOperationBuilder() {
     }
 
+    @Override
     public ODataCreateOperationBuilder<E> client(ODataClient client) {
         return (ODataCreateOperationBuilder<E>) super.client(client);
     }
 
+    @Override
     public <R extends ODataEntity> ODataCreateOperationBuilder<R> path(Class<R> resourceClass, ODataKeyFields<R> keyField, String keyValue) {
         return (ODataCreateOperationBuilder<R>) super.path(resourceClass, keyField, keyValue);
     }
 
+    @Override
     public <R extends ODataEntity> ODataCreateOperationBuilder<R> path(Class<R> resourceClass, ODataKey<R> key) {
         return (ODataCreateOperationBuilder<R>) super.path(resourceClass, key);
     }
 
+    @Override
     public <R extends ODataEntity> ODataCreateOperationBuilder<R> path(Class<R> resourceClass) {
         return (ODataCreateOperationBuilder<R>) super.path(resourceClass);
     }
 
+    @Override
     public ODataCreateOperationBuilder<E> data(E data) {
         return (ODataCreateOperationBuilder<E>) super.data(data);
     }
 
     @Override
-    public ODataOperation<E> build() {
-        final String uri = path.stream()
-                .map(e -> e.toString())
+    public ODataCreateOperation<E> build() {
+        final String uri = "/" + path.stream()
+                .map(ODataPathElement::toString)
                 .collect(Collectors.joining("/"));
          return new ODataCreateOperation(entityClass, client, uri, data);
     }

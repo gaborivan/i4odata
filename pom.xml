@@ -29,7 +29,7 @@ SOFTWARE.
 
     <groupId>io.i4tech</groupId>
     <artifactId>i4odata</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.5-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -38,7 +38,18 @@ SOFTWARE.
         <module>odata-spring</module>
     </modules>
 
+    <scm>
+        <connection>scm:git:https://jira.maihiro.com/stash/scm/commons/i4odata.git</connection>
+        <url>https://jira.maihiro.com/stash/scm/commons/i4odata</url>
+        <developerConnection>scm:git:https://jira.maihiro.com/stash/scm/commons/i4odata.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.scm.id>bitbucket</project.scm.id>
+        <jacoco.skip.instrument>false</jacoco.skip.instrument>
+
         <lombok.version>1.18.8</lombok.version>
         <olingo.version>2.0.11</olingo.version>
         <jackson-databind.version>2.9.8</jackson-databind.version>
@@ -53,112 +64,129 @@ SOFTWARE.
         <junit.version>4.12</junit.version>
         <mockito.version>2.23.4</mockito.version>
         <spring.boot.version>2.1.5.RELEASE</spring.boot.version>
+        <surefire.version>2.22.1</surefire.version>
+        <failsafe.version>2.22.1</failsafe.version>
+        <sonar.host.url>http://saga.podium.maihiro.com:9000</sonar.host.url>
+
+        <jacoco.reportPath>${project.basedir}/../target/jacoco.exec</jacoco.reportPath>
+        <jacoco.itReportPath>${project.basedir}/../target/jacoco-it.exec</jacoco.itReportPath>
+        <sonar.jacoco.reportPaths>${jacoco.reportPath},${jacoco.itReportPath}</sonar.jacoco.reportPaths>
+        <release.issue />
+
+        <odata.test.user>TOURMAI42</odata.test.user>
+        <odata.test.password>Welcome05</odata.test.password>
     </properties>
 
     <dependencyManagement>
-         <dependencies>
-             <dependency>
-                 <groupId>org.jvnet.jaxb2_commons</groupId>
-                 <artifactId>jaxb2-basics-runtime</artifactId>
-                 <version>${jaxb2.version}</version>
-             </dependency>
-             <dependency>
-                 <groupId>org.apache.httpcomponents</groupId>
-                 <artifactId>httpclient</artifactId>
-                 <version>${httpclient.version}</version>
-             </dependency>
-             <dependency>
-                 <groupId>net.sf.saxon</groupId>
-                 <artifactId>Saxon-HE</artifactId>
-                 <version>${saxon-he.version}</version>
-             </dependency>
-             <dependency>
-                 <groupId>org.projectlombok</groupId>
-                 <artifactId>lombok</artifactId>
-                 <version>${lombok.version}</version>
-                 <scope>provided</scope>
-             </dependency>
-             <dependency>
-                 <groupId>org.apache.olingo</groupId>
-                 <artifactId>olingo-odata2-api</artifactId>
-                 <version>${olingo.version}</version>
-                 <scope>compile</scope>
-             </dependency>
-             <dependency>
-                 <groupId>org.apache.olingo</groupId>
-                 <artifactId>olingo-odata2-core</artifactId>
-                 <version>${olingo.version}</version>
-                 <scope>runtime</scope>
-             </dependency>
-             <dependency>
-                 <groupId>commons-io</groupId>
-                 <artifactId>commons-io</artifactId>
-                 <version>${commons-io.version}</version>
-             </dependency>
-             <dependency>
-                 <groupId>org.apache.commons</groupId>
-                 <artifactId>commons-lang3</artifactId>
-                 <version>${commons-lang.version}</version>
-             </dependency>
-             <dependency>
-                 <groupId>com.fasterxml.jackson.core</groupId>
-                 <artifactId>jackson-databind</artifactId>
-                 <version>${jackson-databind.version}</version>
-             </dependency>
-             <dependency>
-                 <groupId>com.fasterxml.jackson.dataformat</groupId>
-                 <artifactId>jackson-dataformat-xml</artifactId>
-                 <version>${jackson-databind.version}</version>
-             </dependency>
-             <dependency>
-                 <groupId>com.fasterxml.jackson.core</groupId>
-                 <artifactId>jackson-annotations</artifactId>
-                 <version>${jackson-databind.version}</version>
-                 <scope>provided</scope>
-             </dependency>
-             <dependency>
-                 <groupId>ch.qos.logback</groupId>
-                 <artifactId>logback-core</artifactId>
-                 <version>${logback.version}</version>
-             </dependency>
-             <dependency>
-                 <groupId>ch.qos.logback</groupId>
-                 <artifactId>logback-classic</artifactId>
-                 <version>${logback.version}</version>
-             </dependency>
-             <dependency>
-                 <groupId>org.slf4j</groupId>
-                 <artifactId>slf4j-api</artifactId>
-                 <version>${slf4j.version}</version>
-             </dependency>
-             <dependency>
-                 <groupId>org.springframework.boot</groupId>
-                 <artifactId>spring-boot-dependencies</artifactId>
-                 <version>${spring.boot.version}</version>
-                 <type>pom</type>
-                 <scope>import</scope>
-             </dependency>
-             <dependency>
-                 <groupId>junit</groupId>
-                 <artifactId>junit</artifactId>
-                 <version>${junit.version}</version>
-                 <scope>test</scope>
-             </dependency>
-             <dependency>
-                 <groupId>org.mockito</groupId>
-                 <artifactId>mockito-core</artifactId>
-                 <version>${mockito.version}</version>
-                 <scope>test</scope>
-             </dependency>
-             <dependency>
-                 <groupId>commons-collections</groupId>
-                 <artifactId>commons-collections</artifactId>
-                 <version>${commons-collections.version}</version>
-             </dependency>
-         </dependencies>
+        <dependencies>
+            <dependency>
+                <groupId>org.jvnet.jaxb2_commons</groupId>
+                <artifactId>jaxb2-basics-runtime</artifactId>
+                <version>${jaxb2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpclient.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.sf.saxon</groupId>
+                <artifactId>Saxon-HE</artifactId>
+                <version>${saxon-he.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.olingo</groupId>
+                <artifactId>olingo-odata2-api</artifactId>
+                <version>${olingo.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.olingo</groupId>
+                <artifactId>olingo-odata2-core</artifactId>
+                <version>${olingo.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson-databind.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-xml</artifactId>
+                <version>${jackson-databind.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${jackson-databind.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring.boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>commons-collections</groupId>
+                <artifactId>commons-collections</artifactId>
+                <version>${commons-collections.version}</version>
+            </dependency>
+        </dependencies>
     </dependencyManagement>
 
     <build>
+        <testResources>
+            <testResource>
+                <directory>${project.basedir}/src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -207,16 +235,129 @@ SOFTWARE.
                         </dependency>
                     </dependencies>
                 </plugin>
+                <plugin>
+                    <groupId>org.sonarsource.scanner.maven</groupId>
+                    <artifactId>sonar-maven-plugin</artifactId>
+                    <version>3.7.0.1746</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>net.sf.saxon</groupId>
+                            <artifactId>Saxon-HE</artifactId>
+                            <version>${saxon-he.version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>0.8.4</version>
+                    <executions>
+                        <execution>
+                            <id>prepare-agent</id>
+                            <goals>
+                                <goal>prepare-agent</goal>
+                            </goals>
+                            <configuration>
+                                <propertyName>surefireArgLine</propertyName>
+                                <destFile>${jacoco.reportPath}</destFile>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>prepare-agent-integration</id>
+                            <goals>
+                                <goal>prepare-agent-integration</goal>
+                            </goals>
+                            <configuration>
+                                <propertyName>failsafeArgLine</propertyName>
+                                <destFile>${jacoco.itReportPath}</destFile>
+                            </configuration>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <append>true</append>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${surefire.version}</version>
+                    <configuration>
+                        <argLine>${surefireArgLine}</argLine>
+                        <forkCount>1</forkCount>
+                        <reuseForks>true</reuseForks>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${failsafe.version}</version>
+                    <configuration>
+                        <argLine>${failsafeArgLine}</argLine>
+                        <trimStackTrace>true</trimStackTrace>
+                        <forkCount>1</forkCount>
+                        <reuseForks>true</reuseForks>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>integration-test</id>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
             </plugins>
         </pluginManagement>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>2.7</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
         </plugins>
     </build>
 
-
+    <distributionManagement>
+        <repository>
+            <id>nexus-thirdparty</id>
+            <layout>default</layout>
+            <url>http://goldfish.podium.maihiro.com:8081/repository/thirdparty/</url>
+        </repository>
+    </distributionManagement>
 
 </project>

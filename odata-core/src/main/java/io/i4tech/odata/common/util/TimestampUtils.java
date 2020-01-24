@@ -24,10 +24,15 @@
 
 package io.i4tech.odata.common.util;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 import java.sql.Timestamp;
 import java.util.Date;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TimestampUtils {
+
     public static Timestamp fromNullable(Date date) {
         return (date != null ? Timestamp.from(date.toInstant()) : null);
     }

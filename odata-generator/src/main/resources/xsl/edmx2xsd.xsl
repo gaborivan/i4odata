@@ -676,6 +676,11 @@ SOFTWARE.
                     </xsl:otherwise>
                 </xsl:choose>
             </xsl:attribute>
+            <xs:annotation>
+                <xs:appinfo>
+                    <annox:annotate target="field"><xsl:value-of select="concat('@io.i4tech.odata.common.model.ODataEdmType(&quot;',$typeName,'&quot;)')"/></annox:annotate>
+                </xs:appinfo>
+            </xs:annotation>
         </xs:element>
     </xsl:template>
 

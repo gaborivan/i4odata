@@ -24,6 +24,6 @@
 
 package io.i4tech.odata.common.model;
 
-public interface ODataKeyFields<E extends ODataEntity> extends ODataFields<E>{
+public interface ODataKeyFields<E extends ODataEntity> extends ODataFields<E> {
     String value();
 }

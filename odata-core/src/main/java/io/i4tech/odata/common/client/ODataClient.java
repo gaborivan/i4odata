@@ -28,7 +28,6 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.i4tech.odata.common.authorization.ODataAuthorization;
 import io.i4tech.odata.common.mapper.ODataEntityMapper;
 import io.i4tech.odata.common.model.ODataEntity;
-import io.i4tech.odata.common.model.ODataErrorResponse;
 import io.i4tech.odata.common.util.ODataEntityUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -70,9 +69,9 @@ import java.util.stream.Collectors;
 public class ODataClient {
 
     protected static final String DEFAULT_CONTENT_TYPE = HttpContentType.APPLICATION_XML;
-    private static final String X_CSRF_TOKEN = "x-csrf-token";
-    private static final String X_CSRF_TOKEN_FETCH = "Fetch";
-    private static final String X_CSRF_TOKEN_REQUIRED = "Required";
+    protected static final String X_CSRF_TOKEN = "x-csrf-token";
+    protected static final String X_CSRF_TOKEN_FETCH = "Fetch";
+    protected static final String X_CSRF_TOKEN_REQUIRED = "Required";
 
     @Getter
     protected final String serviceUrl;
@@ -106,7 +105,7 @@ public class ODataClient {
 
     protected final ThreadLocal<Locale> requestLocale;
 
-
+    @SuppressWarnings("squid:S00107") // Only invoked by builder
     protected ODataClient(String serviceUrl, ODataAuthorization authorization, Map<String, String> headers,
                           Map<String, String> metatataArgs, Proxy proxy, Locale locale, HttpClient httpClient, ODataEntityMapper mapper) {
         this.serviceUrl = serviceUrl;
@@ -116,7 +115,7 @@ public class ODataClient {
         this.httpClient = httpClient;
         this.mapper = mapper;
         this.defaultLocale = (locale == null ? Locale.getDefault() : locale);
-        this.requestLocale = new ThreadLocal();
+        this.requestLocale = new ThreadLocal<>();
         this.requestLocale.set(this.defaultLocale);
         this.authorization = authorization;
     }
@@ -149,16 +148,6 @@ public class ODataClient {
             fetchCsrfToken();
         }
         request.setHeader(X_CSRF_TOKEN, csrfToken);
-    }
-
-    protected HttpHead headRequest(String requestPath) {
-        return headRequest(requestPath, null);
-    }
-
-    protected HttpHead headRequest(String requestPath, Map<String, String> extraHeaders) {
-        final HttpHead request = new HttpHead(getRequestUri(requestPath));
-        setReadRequestHeaders(request, extraHeaders);
-        return request;
     }
 
     protected HttpGet getRequest(String requestPath) {
@@ -230,6 +219,7 @@ public class ODataClient {
         return response;
     }
 
+    @SuppressWarnings("squid:S1612") // Method reference for Header::getValue does not work with old httpclient versions
     private void fetchCsrfToken() {
         final HttpGet request = getRequest("", Collections.singletonMap(X_CSRF_TOKEN, X_CSRF_TOKEN_FETCH));
         HttpResponse response = null;
@@ -265,7 +255,7 @@ public class ODataClient {
         HttpResponse response = null;
         try {
             response = executeRequest(request);
-            edm = EntityProvider.readMetadata(response.getEntity().getContent(), false);
+            edm = olingoReadMetaData(response.getEntity().getContent(), false);
         } catch (ODataException  e) {
             throw e;
         } catch (Exception  e) {
@@ -283,7 +273,7 @@ public class ODataClient {
         return edm;
     }
 
-    protected <E extends ODataEntity> EdmEntitySet getEntitySet(String entitySetName) throws EdmException {
+    protected EdmEntitySet getEntitySet(String entitySetName) throws EdmException {
         return getEdm().getDefaultEntityContainer().getEntitySet(entitySetName);
     }
 
@@ -302,8 +292,26 @@ public class ODataClient {
         return typeMap;
     }
 
+    protected Edm olingoReadMetaData(final InputStream metadataXml, final boolean validate) throws EntityProviderException {
+        return EntityProvider.readMetadata(metadataXml, validate);
+    }
+
+    protected ODataEntry olingoReadEntry(final String contentType, final EdmEntitySet entitySet, final InputStream content,
+                                         final EntityProviderReadProperties properties) throws EntityProviderException {
+        return EntityProvider.readEntry(contentType, entitySet, content, properties);
+    }
+
+    protected ODataFeed olingoReadFeed(final String contentType, final EdmEntitySet entitySet, final InputStream content,
+                                       final EntityProviderReadProperties properties) throws EntityProviderException {
+        return EntityProvider.readFeed(contentType, entitySet, content, properties);
+    }
+
+    protected InputStream olingoWriteEntry(final String contentType, final EdmEntitySet entitySet, final Map<String, Object> data, final EntityProviderWriteProperties properties) throws EntityProviderException {
+        return (InputStream) EntityProvider.writeEntry(contentType, entitySet, data, properties).getEntity();
+    }
+
     protected <E extends ODataEntity> E readContentEntry(InputStream content, Class<E> entityClass) throws EdmException, EntityProviderException {
-        ODataEntry entry = EntityProvider.readEntry(DEFAULT_CONTENT_TYPE,
+        ODataEntry entry = olingoReadEntry(DEFAULT_CONTENT_TYPE,
                 getEntitySet(ODataEntityUtils.getEntitySetName(entityClass)),
                 content,
                 EntityProviderReadProperties.init()
@@ -320,7 +328,7 @@ public class ODataClient {
 
 
     protected <E extends ODataEntity> ODataResponse<E> readContentStream(InputStream content, String entitySetName, Class<E> entityClass) throws EdmException, EntityProviderException, IOException {
-        final ODataFeed feed = EntityProvider.readFeed(DEFAULT_CONTENT_TYPE, getEntitySet(entitySetName), content, getReadProperties(entityClass));
+        final ODataFeed feed = olingoReadFeed(DEFAULT_CONTENT_TYPE, getEntitySet(entitySetName), content, getReadProperties(entityClass));
         final ODataResponse<E> response = new ODataResponse<>(feed.getEntries().stream()
                 .map(e -> mapper.mapPropertiesToEntity(e.getProperties(), entityClass))
                 .collect(Collectors.toList()),
@@ -332,6 +340,19 @@ public class ODataClient {
             response.merge(read(entitySetName, entityClass, linkPath));
         }
         return response;
+    }
+
+    protected <E extends ODataEntity> ODataResponse<E> createContentResponse(byte[] content, String entitySetName, Class<E> entityClass) throws EdmException, IOException {
+        try {
+            return readContentStream(new ByteArrayInputStream(content), entitySetName, entityClass);
+        } catch (EntityProviderException e) {
+            try {
+                return new ODataResponse<>(Collections.singletonList(
+                        readContentEntry(new ByteArrayInputStream(content), entityClass)));
+            } catch (EntityProviderException e1) {
+                return new ODataResponse<>(new String(content));
+            }
+        }
     }
 
     protected EntityProviderWriteProperties getWriteProperties(EdmEntitySet entitySet, Map<String, Object> dataMap) throws EdmException, URISyntaxException {
@@ -350,12 +371,13 @@ public class ODataClient {
                 .build();
     }
 
+
     protected InputStream writeContentStream(String entitySetName, Map<String, Object> dataMap) throws EdmException, URISyntaxException, EntityProviderException {
         final EdmEntitySet entitySet = getEntitySet(entitySetName);
         final EntityProviderWriteProperties properties = getWriteProperties(entitySet, dataMap);
 
         // serialize data into ODataResponse object
-        return (InputStream) EntityProvider.writeEntry(DEFAULT_CONTENT_TYPE, entitySet, dataMap, properties).getEntity();
+        return olingoWriteEntry(DEFAULT_CONTENT_TYPE, entitySet, dataMap, properties);
     }
 
     protected <E extends ODataEntity> InputStream writeContentStream(E data, Class<E> entityClass) throws EdmException, URISyntaxException, EntityProviderException {
@@ -389,16 +411,8 @@ public class ODataClient {
             final byte[] content = IOUtils.toByteArray(response.getEntity().getContent());
             request.releaseConnection();
 
-            try {
-                return readContentStream(new ByteArrayInputStream(content), entitySet, entityClass);
-            } catch (EntityProviderException e) {
-                try {
-                    return new ODataResponse<>(Collections.singletonList(
-                            readContentEntry(new ByteArrayInputStream(content), entityClass)));
-                } catch (EntityProviderException e1) {
-                    return new ODataResponse<>(new String(content));
-                }
-            }
+            return createContentResponse(content, entitySet, entityClass);
+
         } catch (Exception e) {
             throw new ODataException(e);
         } finally {
@@ -432,12 +446,11 @@ public class ODataClient {
 
     public <E extends ODataEntity> ODataResponse<E> update(Class<E> entityClass, String requestPath, E data) {
         final HttpPatch request = patchRequest(requestPath);
-        HttpResponse response = null;
         try {
             final InputStream contentStream = writeContentStream(data, entityClass);
             request.setEntity(new InputStreamEntity(contentStream));
 
-            response = executeRequest(request);
+            executeRequest(request);
 
             ODataResponse<E> result = null;
             if (ODataEntityUtils.allKeyFieldsSet(data)) {
@@ -448,7 +461,7 @@ public class ODataClient {
             return result;
         } catch (CsrfTokenValidationFailedException e) {
             // retry with new token
-            return create(entityClass, requestPath, data);
+            return update(entityClass, requestPath, data);
         } catch (ODataException e) {
             throw e;
         } catch (Exception e) {
@@ -460,10 +473,9 @@ public class ODataClient {
 
     public <E extends ODataEntity> ODataResponse<E> delete(Class<E> entityClass, String requestPath) {
         final HttpDelete request = deleteRequest(requestPath);
-        HttpResponse response = null;
         try {
-            response = executeRequest(request);
-            return new ODataResponse<E>();
+            executeRequest(request);
+            return new ODataResponse<>();
         } catch (CsrfTokenValidationFailedException e) {
             // retry with new token
             return delete(entityClass, requestPath);
@@ -489,17 +501,9 @@ public class ODataClient {
             final byte[] content = IOUtils.toByteArray(response.getEntity().getContent());
             request.releaseConnection();
 
-            try {
-                final String entitySetName = ODataEntityUtils.getEntitySetName(entityClass);
-                return readContentStream(new ByteArrayInputStream(content), entitySetName, entityClass);
-            } catch (EntityProviderException e) {
-                try {
-                    return new ODataResponse<>(Collections.singletonList(
-                            readContentEntry(new ByteArrayInputStream(content), entityClass)));
-                } catch (EntityProviderException e1) {
-                    return new ODataResponse<>(new String(content));
-                }
-            }
+            final String entitySetName = ODataEntityUtils.getEntitySetName(entityClass);
+            return createContentResponse(content, entitySetName, entityClass);
+
         } catch (Exception e) {
             throw new ODataException(e);
         } finally {

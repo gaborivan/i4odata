@@ -24,5 +24,6 @@
 
 package io.i4tech.odata.common.model;
 
+@SuppressWarnings("squid:S2094") // Can be extended in the future
 public class ODataEntity {
 }
