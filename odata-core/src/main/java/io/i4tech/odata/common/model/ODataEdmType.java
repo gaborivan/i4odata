@@ -22,13 +22,15 @@
  * SOFTWARE.
  */
 
-package io.i4tech.odata.common.util;
+package io.i4tech.odata.common.model;
 
-import io.i4tech.odata.common.model.ODataEntity;
-import io.i4tech.odata.common.model.ODataFields;
-import io.i4tech.odata.common.operation.ODataFilter;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-@FunctionalInterface
-interface ODataFilterFunction<T extends ODataEntity> {
-    public ODataFilter.ODataFilterExpressionBuilder<T> apply(ODataFields<T> field, ODataFilter.Option option, String value);
+@Target(ElementType.FIELD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface ODataEdmType {
+    String value();
 }

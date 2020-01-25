@@ -24,6 +24,9 @@
 
 package io.i4tech.odata.common.model;
 
+@SuppressWarnings({"squid:S2326", "squid:S1118"})
+// Generic type parameter needed for type safe interface
+// Not a utility class
 public class ODataFunction<R extends ODataEntity> {
-    public final static String HTTP_METHOD = "NONE";
+    public static final String HTTP_METHOD = "NONE";
 }

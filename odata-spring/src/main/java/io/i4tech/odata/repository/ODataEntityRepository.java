@@ -24,18 +24,18 @@
 
 package io.i4tech.odata.repository;
 
+import io.i4tech.odata.common.client.ODataClient;
+import io.i4tech.odata.common.client.ODataException;
+import io.i4tech.odata.common.client.ODataResponse;
 import io.i4tech.odata.common.model.ODataEntity;
-import io.i4tech.odata.common.model.ODataFields;
 import io.i4tech.odata.common.model.ODataKey;
 import io.i4tech.odata.common.model.ODataKeyFields;
+import io.i4tech.odata.common.operation.OrderByDirection;
 import io.i4tech.odata.common.operation.create.ODataCreateOperation;
 import io.i4tech.odata.common.operation.delete.ODataDeleteOperation;
 import io.i4tech.odata.common.operation.query.ODataQueryOperation;
 import io.i4tech.odata.common.operation.query.ODataQueryOperationBuilder;
 import io.i4tech.odata.common.operation.update.ODataUpdateOperation;
-import io.i4tech.odata.common.client.ODataClient;
-import io.i4tech.odata.common.client.ODataException;
-import io.i4tech.odata.common.client.ODataResponse;
 import io.i4tech.odata.common.util.ODataEntityUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +50,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static org.springframework.data.domain.Sort.Direction.DESC;
+
 @SuppressWarnings("unchecked")
 @NoRepositoryBean
 public class ODataEntityRepository<E extends ODataEntity> implements PagingAndSortingRepository<E, String> {
@@ -61,10 +63,18 @@ public class ODataEntityRepository<E extends ODataEntity> implements PagingAndSo
         return (Class<E>) ODataEntityUtils.getEntityClass(getClass());
     }
 
+
     private void applySort(ODataQueryOperationBuilder<E> queryBuilder, Sort sort) {
         if (sort instanceof ODataSort) {
-            final ODataSort odataSort = (ODataSort) sort;
-            odataSort.getFields().forEach(s -> queryBuilder.orderBy((ODataFields<E>) s));
+            final ODataSort<E> odataSort = (ODataSort<E>) sort;
+            odataSort.getFields().forEach(f -> {
+                final Sort.Order sortOrder = sort.getOrderFor(f.value());
+                if (sortOrder != null) {
+                    queryBuilder.orderBy(f, sortOrder.getDirection() == DESC ? OrderByDirection.DESC : OrderByDirection.ASC);
+                } else {
+                    queryBuilder.orderBy(f);
+                }
+            });
         }
     }
 
@@ -80,7 +90,7 @@ public class ODataEntityRepository<E extends ODataEntity> implements PagingAndSo
         return operationBuilder;
     }
 
-    protected ODataQueryOperationBuilder<? extends ODataEntity> getQueryBuilder() {
+    protected ODataQueryOperationBuilder<ODataEntity> getQueryBuilder() {
         return ODataQueryOperation.builder()
                 .client(client);
     }

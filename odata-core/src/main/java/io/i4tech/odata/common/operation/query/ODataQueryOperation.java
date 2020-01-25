@@ -42,7 +42,7 @@ public class ODataQueryOperation<E extends ODataEntity> extends AbstractODataOpe
         return client.read(collectionName, this.entityClass, requestPath);
     }
 
-    public static ODataQueryOperationBuilder<?> builder() {
+    public static <E extends ODataEntity> ODataQueryOperationBuilder<E> builder() {
         return new ODataQueryOperationBuilder<>();
     }
 }

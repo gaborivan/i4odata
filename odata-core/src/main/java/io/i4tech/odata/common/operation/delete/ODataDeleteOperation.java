@@ -39,7 +39,7 @@ public class ODataDeleteOperation<E extends ODataEntity> extends AbstractODataWr
         return client.delete(this.entityClass, this.requestPath);
     }
 
-    public static ODataDeleteOperationBuilder<?> builder() {
+    public static <E extends ODataEntity> ODataDeleteOperationBuilder<E> builder() {
         return new ODataDeleteOperationBuilder<>();
     }
 }

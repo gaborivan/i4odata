@@ -24,18 +24,42 @@
 
 package io.i4tech.odata.common.util;
 
-import io.i4tech.odata.common.model.ODataEntity;
-import io.i4tech.odata.common.model.ODataEntitySet;
-import io.i4tech.odata.common.model.ODataKey;
-import io.i4tech.odata.common.model.ODataKeyFields;
+import io.i4tech.odata.common.model.*;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
 
+import javax.xml.bind.annotation.XmlElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Stream;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ODataEntityUtils {
+
+    @SneakyThrows
+    public static Class<?> getFieldJavaType(ODataFields<?> field) {
+        final Class<?> entityClz = (Class<?>) ((ParameterizedType) field.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[0];
+        return Arrays.stream(entityClz.getDeclaredFields())
+          .filter(f -> f.getAnnotation(XmlElement.class) != null)
+          .filter(f -> f.getAnnotation(XmlElement.class).name().equals(field.value()))
+          .map(Field::getType).findAny().orElse(null);
+    }
+
+  @SneakyThrows
+  public static EdmSimpleType getFieldEdmType(ODataFields<?> field) {
+    final Class<?> entityClz = (Class<?>) ((ParameterizedType) field.getClass().getGenericInterfaces()[0]).getActualTypeArguments()[0];
+    return Arrays.stream(entityClz.getDeclaredFields())
+        .filter(f -> f.getAnnotation(XmlElement.class) != null)
+        .filter(f -> f.getAnnotation(ODataEdmType.class) != null)
+        .filter(f -> f.getAnnotation(XmlElement.class).name().equals(field.value()))
+        .map(f -> f.getAnnotation(ODataEdmType.class).value())
+            .findAny()
+            .map(EdmSimpleType::fromValue)
+            .orElse(null);
+  }
 
     public static Class<?> getEntityClass(Class<?> clz) {
         return (Class<?>) ((ParameterizedType) clz.getGenericSuperclass()).getActualTypeArguments()[0];
@@ -50,13 +74,13 @@ public class ODataEntityUtils {
     }
 
     public static <E extends ODataEntity> ODataKeyFields<E> getKeyField(Class<E> entityClass) {
-        // TODO: Should define an annotation @ODataKey on key fields for easier lookup
         return Arrays.stream(entityClass.getDeclaredFields())
                 .filter(f -> ODataKeyFields.class.isAssignableFrom(f.getType()))
                 .map(f -> {
                     try {
                         return ((ODataKeyFields<E>)f.get(entityClass));
                     } catch (Exception e) {
+                        // do nothing, null will be returned
                     }
                     return null;
                 })
@@ -64,8 +88,7 @@ public class ODataEntityUtils {
     }
 
     public static <E extends ODataEntity> boolean allKeyFieldsSet(E data) {
-        // TODO: Should define an annotation @ODataKey on key fields for easier lookup
-        return !Arrays.stream(data.getClass().getDeclaredFields())
+        return Arrays.stream(data.getClass().getDeclaredFields())
                 .filter(f -> ODataKeyFields.class.isAssignableFrom(f.getType()))
                 .map(f -> {
                     try {
@@ -75,14 +98,14 @@ public class ODataEntityUtils {
                         keyField.setAccessible(true);
                         return keyField.get(data) != null;
                     } catch (Exception e) {
+                        // skip evaluation for this key field
                     }
                     return false;
-                }).anyMatch(b -> b != true);
+                }).noneMatch(b -> !b);
     }
 
     public static <E extends ODataEntity> ODataKey<E> getODataKey(E data) {
         ODataKey.ODataEntityKeyBuilder keyBuilder = ODataKey.builder();
-        // TODO: Should define an annotation @ODataKey on key fields for easier lookup
         Arrays.stream(data.getClass().getDeclaredFields())
                 .filter(f -> ODataKeyFields.class.isAssignableFrom(f.getType()))
                 .forEach(f -> {
@@ -95,6 +118,7 @@ public class ODataEntityUtils {
                         final String keyValue = (String) keyField.get(data);
                         keyBuilder.add(keyDef, keyValue);
                     } catch (Exception e) {
+                        // skip this key
                     }
                 });
         return keyBuilder.build();

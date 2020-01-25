@@ -98,7 +98,7 @@ public class ODataFunctionOperationBuilder<E extends ODataEntity> {
                 throw new ODataOperationBuilderException("Could not build request path.", e);
             }
         }
-        return new ODataFunctionOperation<E>(
+        return new ODataFunctionOperation<>(
                 (Class<E>)ODataEntityUtils.getEntityClass(function.getClass()),
                 client, requestPath.toString(), postParameters);
     }

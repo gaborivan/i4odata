@@ -29,7 +29,6 @@ import io.i4tech.odata.common.model.ODataEntity;
 import io.i4tech.odata.common.model.ODataKey;
 import io.i4tech.odata.common.model.ODataKeyFields;
 import io.i4tech.odata.common.operation.AbstractODataWriteOperationBuilder;
-import io.i4tech.odata.common.operation.ODataOperation;
 
 import java.util.stream.Collectors;
 
@@ -38,26 +37,25 @@ public class ODataDeleteOperationBuilder<E extends ODataEntity> extends Abstract
     ODataDeleteOperationBuilder() {
     }
 
+    @Override
     public ODataDeleteOperationBuilder<E> client(ODataClient client) {
         return (ODataDeleteOperationBuilder<E>) super.client(client);
     }
 
+    @Override
     public <R extends ODataEntity> ODataDeleteOperationBuilder<R> path(Class<R> resourceClass, ODataKeyFields<R> keyField, String keyValue) {
         return (ODataDeleteOperationBuilder<R>) super.path(resourceClass, keyField, keyValue);
     }
 
+    @Override
     public <R extends ODataEntity> ODataDeleteOperationBuilder<R> path(Class<R> resourceClass, ODataKey<R> key) {
         return (ODataDeleteOperationBuilder<R>) super.path(resourceClass, key);
     }
 
-    public <R extends ODataEntity> ODataDeleteOperationBuilder<R> path(Class<R> resourceClass) {
-        return (ODataDeleteOperationBuilder<R>) super.path(resourceClass);
-    }
-
     @Override
-    public ODataOperation<E> build() {
-        final String uri = path.stream()
-                .map(e -> e.toString())
+    public ODataDeleteOperation<E> build() {
+        final String uri = "/" + path.stream()
+                .map(ODataPathElement::toString)
                 .collect(Collectors.joining("/"));
          return new ODataDeleteOperation(entityClass, client, uri);
     }

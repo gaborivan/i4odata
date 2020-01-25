@@ -24,12 +24,11 @@
 
 package io.i4tech.odata.common.operation.update;
 
+import io.i4tech.odata.common.client.ODataClient;
 import io.i4tech.odata.common.model.ODataEntity;
 import io.i4tech.odata.common.model.ODataKey;
 import io.i4tech.odata.common.model.ODataKeyFields;
 import io.i4tech.odata.common.operation.AbstractODataWriteOperationBuilder;
-import io.i4tech.odata.common.operation.ODataOperation;
-import io.i4tech.odata.common.client.ODataClient;
 
 import java.util.stream.Collectors;
 
@@ -38,30 +37,30 @@ public class ODataUpdateOperationBuilder<E extends ODataEntity> extends Abstract
     ODataUpdateOperationBuilder() {
     }
 
+    @Override
     public ODataUpdateOperationBuilder<E> client(ODataClient client) {
         return (ODataUpdateOperationBuilder<E>) super.client(client);
     }
 
+    @Override
     public <R extends ODataEntity> ODataUpdateOperationBuilder<R> path(Class<R> resourceClass, ODataKeyFields<R> keyField, String keyValue) {
         return (ODataUpdateOperationBuilder<R>) super.path(resourceClass, keyField, keyValue);
     }
 
+    @Override
     public <R extends ODataEntity> ODataUpdateOperationBuilder<R> path(Class<R> resourceClass, ODataKey<R> key) {
         return (ODataUpdateOperationBuilder<R>) super.path(resourceClass, key);
     }
 
-    public <R extends ODataEntity> ODataUpdateOperationBuilder<R> path(Class<R> resourceClass) {
-        return (ODataUpdateOperationBuilder<R>) super.path(resourceClass);
-    }
-
+    @Override
     public ODataUpdateOperationBuilder<E> data(E data) {
         return (ODataUpdateOperationBuilder<E>) super.data(data);
     }
 
     @Override
-    public ODataOperation<E> build() {
-        final String uri = path.stream()
-                .map(e -> e.toString())
+    public ODataUpdateOperation<E> build() {
+        final String uri = "/" + path.stream()
+                .map(ODataPathElement::toString)
                 .collect(Collectors.joining("/"));
         return new ODataUpdateOperation(entityClass, client, uri, data);
     }

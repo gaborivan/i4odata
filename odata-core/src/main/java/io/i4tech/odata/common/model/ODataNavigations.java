@@ -24,6 +24,7 @@
 
 package io.i4tech.odata.common.model;
 
+@SuppressWarnings("squid:S2326") // Generic type parameter needed for type safe interface
 public interface ODataNavigations<E extends ODataEntity> {
     String value();
 }

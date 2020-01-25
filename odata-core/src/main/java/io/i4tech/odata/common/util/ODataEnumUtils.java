@@ -25,8 +25,12 @@
 package io.i4tech.odata.common.util;
 
 import io.i4tech.odata.common.model.ODataEnum;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ODataEnumUtils {
+
     public static String nullableValue(ODataEnum code) {
         return (code != null ? code.value() : null);
     }

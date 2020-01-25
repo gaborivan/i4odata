@@ -27,6 +27,8 @@ package io.i4tech.odata.common.util;
 import io.i4tech.odata.common.model.ODataEntity;
 import io.i4tech.odata.common.model.ODataFields;
 import io.i4tech.odata.common.operation.ODataFilter;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.util.Collections;
@@ -35,6 +37,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ODataOperationUtils {
 
     public static  <T extends ODataEntity> ODataFilter<T> multiStringFilter( ODataFields<T> field, ODataFilter.Option option, List<String> values) {
@@ -50,7 +53,7 @@ public class ODataOperationUtils {
         return (!CollectionUtils.isEmpty(navigation.apply(entity)) ?
                 navigation.apply(entity)
                         .stream()
-                        .map(n -> getter.apply(n))
+                        .map(getter::apply)
                         .collect(Collectors.toSet())
                 : Collections.emptySet()
         );

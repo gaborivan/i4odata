@@ -22,8 +22,23 @@
  * SOFTWARE.
  */
 
-package io.i4tech.odata.common.model;
+package io.i4tech.odata.common.client;
 
-public interface ODataCodeList {
-    String name();
+import lombok.Data;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlType;
+
+@Data
+@XmlAccessorType(XmlAccessType.FIELD)
+@XmlType(name = "error", propOrder = {"code", "message"})
+public class ODataErrorResponse {
+
+    @XmlElement(name = "code")
+    private String code;
+
+    @XmlElement(name = "message")
+    private String message;
 }

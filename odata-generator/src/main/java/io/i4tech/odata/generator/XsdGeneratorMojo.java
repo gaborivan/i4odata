@@ -25,31 +25,38 @@
 package io.i4tech.odata.generator;
 
 import lombok.*;
+import net.sf.saxon.trans.XPathException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 
+import javax.xml.XMLConstants;
+import javax.xml.transform.ErrorListener;
 import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 
@@ -63,7 +70,6 @@ import java.util.stream.Collectors;
  * @version 1.0.0
  * @since 1.0.0
  */
-@Getter(AccessLevel.PACKAGE)
 @Setter(AccessLevel.PACKAGE)
 public class XsdGeneratorMojo extends AbstractMojo {
 
@@ -77,6 +83,9 @@ public class XsdGeneratorMojo extends AbstractMojo {
         protected String schema;
     }
 
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private Log log = getLog();
 
     /**
      * The enclosing project.
@@ -268,74 +277,132 @@ public class XsdGeneratorMojo extends AbstractMojo {
      */
     private List<String> excludedCodelists;
 
-
-    private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String HTTP_HEADER_ACCEPT = "Accept";
-    private static final String HTTP_HEADER_ACCEPT_LANGUAGE = "Accept-Language";
-    private static final String APPLICATION_ATOM_XML = "application/atom+xml";
-
     private final Log logger = getLog();
 
-    private InputStream executeGet(String absoluteUrl, String contentType) throws IllegalStateException, IOException {
+    private HttpEntity executeGet(String absoluteUrl, String contentType) throws IOException {
         final HttpGet get = new HttpGet(absoluteUrl);
         if (StringUtils.isNotBlank(basicAuthUser) && StringUtils.isNotBlank(basicAuthPassword)) {
-            get.setHeader(AUTHORIZATION_HEADER, getAuthorizationHeader());
+            get.setHeader(HttpHeaders.AUTHORIZATION, getAuthorizationHeader());
         }
-        get.setHeader(HTTP_HEADER_ACCEPT, contentType);
-        get.setHeader(HTTP_HEADER_ACCEPT_LANGUAGE, "en");
+        get.setHeader(HttpHeaders.ACCEPT, contentType);
+        get.setHeader(HttpHeaders.ACCEPT_LANGUAGE, "en");
+        get.setHeader(HttpHeaders.ACCEPT_ENCODING, "UTF-8");
 
         HttpResponse response = HttpClientBuilder.create().build().execute(get);
-        return response.getEntity().getContent();
+        return response.getEntity();
     }
 
     private String getAuthorizationHeader() {
-        // Note: This example uses Basic Authentication
-        // Preferred option is to use OAuth SAML bearer flow.
-        String temp = new StringBuilder(basicAuthUser).append(":").append(basicAuthPassword).toString();
-        String result = "Basic " + new String(Base64.encodeBase64(temp.getBytes()));
-        return result;
+        String temp = basicAuthUser + ":" + basicAuthPassword;
+        return "Basic " + new String(Base64.encodeBase64(temp.getBytes()));
     }
 
     private String getCollectionContent(final String href) throws IOException {
-        final InputStream is = executeGet(href, APPLICATION_ATOM_XML);
-        final byte[] data = IOUtils.toByteArray(is);
-        final String content = new String(data);
-        is.close();
+        final HttpEntity response = executeGet(href, ContentType.APPLICATION_ATOM_XML.getMimeType());
+        final String content = IOUtils.toString(response.getContent(), StandardCharsets.UTF_8);
         return content;
     }
 
-    private void setClassLoader() {
-        try {
-            Set<URL> urls = new HashSet<>();
-            List<Resource> elements = project.getResources();
-            for (Resource element : elements) {
-                urls.add(new File(element.getDirectory()).toURI().toURL());
+    private String readCodeList(String href) throws IOException {
+        final StringBuilder codelist = new StringBuilder();
+        boolean hasNext = false;
+        String uri = href;
+
+        do {
+            String content = getCollectionContent(uri);
+            if (hasNext) {
+                content = content.substring(content.indexOf("<entry"));
             }
+            int idx = content.indexOf("<link rel=");
+            if (idx > -1) {
+                codelist.append(content.substring(0, idx));
+                final String hrefHolder = content.substring(idx);
+                int hrefStart = hrefHolder.indexOf("href=") + 6;
+                int hrefEnd = hrefHolder.indexOf("\"/>");
+                uri = hrefHolder.substring(hrefStart, hrefEnd).replace("&amp;", "");
+                hasNext = true;
+            } else {
+                codelist.append(content);
+                hasNext = false;
+            }
+        } while (hasNext);
 
-            ClassLoader contextClassLoader = URLClassLoader.newInstance(
-                    urls.toArray(new URL[0]),
-                    Thread.currentThread().getContextClassLoader());
+        return codelist.toString();
+    }
 
-            Thread.currentThread().setContextClassLoader(contextClassLoader);
+    private StreamSource resolveCollection(String href) {
+        if (href.startsWith("http")) {
+            final String outDir = rootCollectionPath + (StringUtils.isNotBlank(packageNamespace) ?
+                    packageNamespace : "");
+            final File directory = new File(outDir);
+            if (!directory.exists()){
+                directory.mkdirs();
+            }
+            final String outfile = outDir + "/" + href.substring(href.lastIndexOf('/') + 1) + ".xml";
 
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
+            try (FileWriter writer = new FileWriter(outfile)) {
+                final String codelist = readCodeList(href);
+
+                writer.write(codelist);
+
+                return new StreamSource(new ByteArrayInputStream(codelist.getBytes()));
+            } catch (Exception e) {
+                return null;
+            }
+        } else {
+            return null;
         }
     }
 
+    private String createPrefix(String name) {
+        return name.replaceAll("[a-z]","").toLowerCase();
+    }
+
+    private void handleException(TransformerException e) {
+        if (e instanceof XPathException) {
+            final String errorCode = ((XPathException)e).getErrorCodeLocalPart();
+            final Pattern pattern = Pattern.compile("([A-Za-z]+\\.xml)");
+            final Matcher matcher = pattern.matcher(e.getMessage());
+            if ("FODC0002".equals(errorCode) && matcher.find()) {
+                log.info(String.format("Local copy of collection '%s' not found. Fetching.", matcher.group(1)));
+            } else {
+                log.error(e);
+            }
+        } else {
+            log.error(e);
+        }
+    }
 
     public void execute() throws MojoExecutionException, MojoFailureException {
-        //Set saxon as transformer.
-        System.setProperty("javax.xml.transform.TransformerFactory", "net.sf.saxon.TransformerFactoryImpl");
-
-        StreamSource xsl = null;
-        if (StringUtils.isBlank(transformerStylesheet)) {
-            xsl = new StreamSource(this.getClass().getResourceAsStream("/xsl/edmx2xsd.xsl"));
-        } else {
-            xsl = new StreamSource(new File(transformerStylesheet));
-        }
-        TransformerFactory tFactory = TransformerFactory.newInstance();
         try {
+            //Set saxon as transformer.
+            System.setProperty("javax.xml.transform.TransformerFactory", "net.sf.saxon.TransformerFactoryImpl");
+
+            StreamSource xsl = null;
+            if (StringUtils.isBlank(transformerStylesheet)) {
+                xsl = new StreamSource(this.getClass().getResourceAsStream("/xsl/edmx2xsd.xsl"));
+            } else {
+                xsl = new StreamSource(new File(transformerStylesheet));
+            }
+
+            final TransformerFactory tFactory = TransformerFactory.newInstance();
+            tFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            tFactory.setErrorListener(new ErrorListener() {
+                @Override
+                public void warning(TransformerException e) throws TransformerException {
+                    handleException(e);
+                }
+
+                @Override
+                public void error(TransformerException e) throws TransformerException {
+                    handleException(e);
+                }
+
+                @Override
+                public void fatalError(TransformerException e) throws TransformerException {
+                    handleException(e);
+                }
+            });
             final String entities = Arrays.stream(StringUtils.defaultString(headerEntities).split(","))
                     .map(s -> entityPrefix + "." + s).collect(Collectors.joining(","));
 
@@ -367,65 +434,15 @@ public class XsdGeneratorMojo extends AbstractMojo {
             }
 
             if (excludedCodelists != null && !excludedCodelists.isEmpty()) {
-                transformer.setParameter("excludedCodelists", excludedCodelists.stream()
-                        .collect(Collectors.joining(",")));
+                transformer.setParameter("excludedCodelists", String.join(",", excludedCodelists));
             }
-            transformer.setURIResolver((href, base) -> {
+            transformer.setURIResolver((href, base) -> resolveCollection(href));
+            transformer.transform(new StreamSource(new File(inputMetadata)), new StreamResult(new File(outputSchema)));
 
-                try {
-                    if (href.startsWith("http")) {
-                        String outDir = rootCollectionPath + (StringUtils.isNotBlank(packageNamespace) ?
-                                packageNamespace : "");
-                        File directory = new File(outDir);
-                        if (! directory.exists()){
-                            directory.mkdirs();
-                        }
-                        String outfile = outDir + "/" + href.substring(href.lastIndexOf('/') + 1) + ".xml";
-
-                        boolean hasNext = false;
-                        final StringBuffer codelist = new StringBuffer();
-                        String uri = href;
-                        do {
-                            String content = getCollectionContent(uri);
-                            if (hasNext) {
-                                content = content.substring(content.indexOf("<entry"));
-                            }
-                            int idx = content.indexOf("<link rel=");
-                            if (idx > -1) {
-                                codelist.append(content.substring(0, idx));
-                                final String hrefHolder = content.substring(idx);
-                                int hrefStart = hrefHolder.indexOf("href=") + 6;
-                                int hrefEnd = hrefHolder.indexOf("\"/>");
-                                uri = hrefHolder.substring(hrefStart, hrefEnd).replace("&amp;", "");
-                                hasNext = true;
-                            } else {
-                                codelist.append(content);
-                                hasNext = false;
-                            }
-                        } while (hasNext);
-
-                        FileWriter writer = new FileWriter(outfile);
-                        writer.write(codelist.toString());
-                        writer.flush();
-                        writer.close();
-                        ByteArrayInputStream bais = new ByteArrayInputStream(codelist.toString().getBytes());
-                        return new StreamSource(bais);
-                    } else {
-                        return null;
-                    }
-                } catch (IOException e) {
-                    return null;
-                }
-            });
-            transformer.transform(new StreamSource(new File(inputMetadata)),
-                    //new StreamResult(System.out));
-                    new StreamResult(new File(outputSchema)));
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new MojoExecutionException("Could not generate xsd.", e);
         }
     }
 
-    private String createPrefix(String name) {
-        return name.replaceAll("[a-z]","").toLowerCase();
-    }
+
 }

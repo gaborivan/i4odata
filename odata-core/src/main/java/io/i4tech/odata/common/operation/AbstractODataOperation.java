@@ -41,17 +41,12 @@ public abstract class AbstractODataOperation<E extends ODataEntity> implements O
     @Getter
     protected String requestPath;
 
-    protected AbstractODataOperation() {
-    }
-
     protected AbstractODataOperation(Class<E> entityClass, ODataClient client, String requestPath) {
         this.entityClass = entityClass;
         this.client = client;
         this.requestPath = requestPath;
     }
 
-
-    public abstract ODataResponse<E> execute();
 
     public ODataResponse<E> execute(Locale locale) {
         Locale clientLocale = client.getRequestLocale();

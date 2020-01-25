@@ -24,6 +24,9 @@
 
 package io.i4tech.odata.common.model;
 
-public interface ODataFields<E extends ODataEntity> {
+import java.io.Serializable;
+
+@SuppressWarnings("squid:S2326") // Generic type parameter needed for type safe interface
+public interface ODataFields<E extends ODataEntity> extends Serializable {
     String value();
 }

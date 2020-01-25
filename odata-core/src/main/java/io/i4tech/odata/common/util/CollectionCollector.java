@@ -31,24 +31,33 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
-public class NestedCollector<T> implements Collector<Collection<T>, Set<T>, List<T>> {
+public class CollectionCollector<T, S extends Collection<T>, F extends Collection<T>> implements Collector<Collection<T>, S, F> {
 
-    public static <T> NestedCollector<T> toCombinedList() {
-        return new NestedCollector<>();
+    private Supplier<S> supplier;
+
+    private Function<S, F> finisher;
+
+    public CollectionCollector(Supplier<S> supplier, Function<S, F> finisher) {
+        this.supplier = supplier;
+        this.finisher = finisher;
+    }
+
+    public static <T, S extends Collection<T>, F extends Collection<T>> CollectionCollector<T, S, F> combine(Supplier<S> supplier, Function<S, F> finisher) {
+        return new CollectionCollector<>(supplier, finisher);
     }
 
     @Override
-    public Supplier<Set<T>> supplier() {
-        return HashSet::new;
+    public Supplier<S> supplier() {
+        return supplier;
     }
 
     @Override
-    public BiConsumer<Set<T>, Collection<T>> accumulator() {
-        return Set::addAll;
+    public BiConsumer<S, Collection<T>> accumulator() {
+        return S::addAll;
     }
 
     @Override
-    public BinaryOperator<Set<T>> combiner() {
+    public BinaryOperator<S> combiner() {
         return (left, right) -> {
             left.addAll(right);
             return left;
@@ -56,8 +65,8 @@ public class NestedCollector<T> implements Collector<Collection<T>, Set<T>, List
     }
 
     @Override
-    public Function<Set<T>, List<T>> finisher() {
-        return ArrayList::new;
+    public Function<S, F> finisher() {
+        return finisher;
     }
 
     @Override

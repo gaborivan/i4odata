@@ -26,25 +26,32 @@ package io.i4tech.odata.repository;
 
 import io.i4tech.odata.common.model.ODataEntity;
 import io.i4tech.odata.common.model.ODataFields;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.springframework.data.domain.Sort;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
+@EqualsAndHashCode(callSuper = true)
 public class ODataSort<E extends ODataEntity> extends Sort {
 
     @Getter
     private List<ODataFields<E>> fields;
 
-    public ODataSort(ODataFields<E>... fields) {
-        super((String[]) Arrays.stream(fields).map(f -> f.value()).collect(Collectors.toList()).toArray(new String[0]));
+    @SafeVarargs
+    private ODataSort(Direction direction, ODataFields<E>... fields) {
+        super(direction, (String[]) Arrays.stream(fields)
+                .map(ODataFields::value).toArray(String[]::new));
         this.fields = Arrays.asList(fields);
     }
 
     public static <E extends ODataEntity> Sort by(ODataFields<E>... fields) {
-        return new ODataSort<>(fields);
+        return new ODataSort<>(Direction.ASC, fields);
+    }
+
+    public static <E extends ODataEntity> Sort by(Direction direction, ODataFields<E>... fields) {
+        return new ODataSort<>(direction, fields);
     }
 
 }
