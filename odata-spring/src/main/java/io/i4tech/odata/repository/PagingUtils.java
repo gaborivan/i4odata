@@ -25,6 +25,8 @@
 package io.i4tech.odata.repository;
 
 import io.i4tech.odata.common.model.ODataEntity;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +37,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PagingUtils {
 
     public static <E extends ODataEntity> List<E> loadAllPages(Pageable pager, Function<Pageable, Page<E>> loadPage) {

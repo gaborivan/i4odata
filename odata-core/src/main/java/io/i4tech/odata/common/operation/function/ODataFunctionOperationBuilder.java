@@ -28,6 +28,7 @@ import io.i4tech.odata.common.client.ODataClient;
 import io.i4tech.odata.common.model.ODataEntity;
 import io.i4tech.odata.common.model.ODataFunction;
 import io.i4tech.odata.common.operation.ODataOperationBuilderException;
+import io.i4tech.odata.common.util.EncoderUtils;
 import io.i4tech.odata.common.util.ODataEntityUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -83,12 +84,16 @@ public class ODataFunctionOperationBuilder<E extends ODataEntity> {
             final Field f = fields.get(i);
             try {
                 f.setAccessible(true);
-                String name = f.getAnnotation(XmlElement.class).name();
-                String value = (String) f.get(function);
+                final String name = f.getAnnotation(XmlElement.class).name();
+                final String value = (String) f.get(function);
                 if (StringUtils.isNotBlank(value)) {
                     if ("GET".equals(httpMethod)) {
-                        requestPath.append(isFirstParam ? "?" : "&");
-                        requestPath.append(name).append("='").append(value).append("'");
+                        requestPath
+                                .append(isFirstParam ? "?" : "&")
+                                .append(name)
+                                .append("='")
+                                .append(EncoderUtils.encode(EncoderUtils.escape(value)))
+                                .append("'");
                     } else if ("POST".equals(httpMethod)) {
                         postParameters.put(name, value);
                     }

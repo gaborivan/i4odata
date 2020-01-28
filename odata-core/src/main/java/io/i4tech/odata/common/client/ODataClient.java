@@ -125,6 +125,8 @@ public class ODataClient {
         StringWriter uri = new StringWriter().append(url);
         if (!url.endsWith("/") && !requestPath.startsWith("/")) {
             uri.append("/");
+        } else if (url.endsWith("/") && requestPath.startsWith("/")) {
+            requestPath = requestPath.substring(1);
         }
         return uri.append(requestPath).toString()
                 .replace(" ", "%20")
