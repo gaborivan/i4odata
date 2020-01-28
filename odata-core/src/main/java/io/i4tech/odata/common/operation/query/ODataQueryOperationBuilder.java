@@ -30,6 +30,7 @@ import io.i4tech.odata.common.operation.AbstractODataOperationBuilder;
 import io.i4tech.odata.common.operation.ODataFilter;
 import io.i4tech.odata.common.operation.ODataOperationBuilderException;
 import io.i4tech.odata.common.operation.OrderByDirection;
+import io.i4tech.odata.common.util.EncoderUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
@@ -255,10 +256,10 @@ public class ODataQueryOperationBuilder<E extends ODataEntity> extends AbstractO
         }
         if (search != null) {
             isFirstClause = appendClause(urlBuilder, isFirstClause,
-                    String.format("$search='%s'", search));
+                    String.format("$search='%s'", EncoderUtils.encode(EncoderUtils.escape(search))));
         }
         if (filter != null) {
-            isFirstClause = appendClause(urlBuilder, isFirstClause, String.format("$filter=%s", filter.getFilterExpression()));
+            isFirstClause = appendClause(urlBuilder, isFirstClause, String.format("$filter=%s", EncoderUtils.encode(filter.getFilterExpression())));
         }
         if (!expand.isEmpty()) {
             isFirstClause = appendClause(urlBuilder, isFirstClause,
