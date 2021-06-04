@@ -55,7 +55,7 @@ SOFTWARE.
         <jackson-databind.version>2.10.2</jackson-databind.version>
         <saxon-he.version>9.6.0-4</saxon-he.version>
         <jaxb2.version>1.11.1</jaxb2.version>
-        <httpclient.version>4.5.8</httpclient.version>
+        <httpclient.version>4.5.13</httpclient.version>
         <commons-io.version>2.6</commons-io.version>
         <commons-lang.version>3.9</commons-lang.version>
         <commons-collections.version>3.2.2</commons-collections.version>
