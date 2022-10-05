@@ -52,7 +52,7 @@ SOFTWARE.
 
         <lombok.version>1.18.8</lombok.version>
         <olingo.version>2.0.11</olingo.version>
-        <jackson-databind.version>2.10.2</jackson-databind.version>
+        <jackson-databind.version>2.12.6.1</jackson-databind.version>
         <saxon-he.version>9.6.0-4</saxon-he.version>
         <jaxb2.version>1.11.1</jaxb2.version>
         <httpclient.version>4.5.8</httpclient.version>
